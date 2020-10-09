@@ -4,9 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Producks.Data;
 using Producks.Web.Models;
+using Producks.Web.ViewModels;
 
 namespace Producks.Web.Controllers
 {
@@ -21,37 +23,52 @@ namespace Producks.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Categories
+            var brands = await _context.Brands
                 .Where(x => x.Active)
-                .ToListAsync());
+                .Select(x => new BrandsViewModel
+                {
+                    Id = x.Id,
+                    Name = x.Name
+                })
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync();
+
+            ViewBag.Brands = brands;
+
+            var categories = await _context.Categories
+                .Where(x => x.Active)
+                .Select(x => new CategoryViewModel
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Description = x.Description
+                })
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync();
+
+            ViewBag.Categories = categories;
+
+            return View(new StoreDto());
         }
 
-
-        //Id = Category Id
-        public async Task<IActionResult> ViewProducts(int? Id)
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ViewProducts([Bind("BrandId, CategoryId")] StoreDto filter)
         {
-            if (Id == null)
-                return BadRequest();
-
-            if (_context.Categories.FirstOrDefault(x => x.Id == Id) == null)
-                return NotFound();
-
             var products = await _context.Products
-                .Where(x =>
-                    x.CategoryId == Id &&
-                    x.Active)
-                .Include(x => x.Category)
+                .Where(
+                    x => x.Active &&
+                    x.BrandId == filter.BrandId &&
+                    x.CategoryId == filter.CategoryId)
                 .Include(x => x.Brand)
-                .Select(x => new ProductDto
+                .Include(x => x.Category)
+                .Select(x => new ProductViewModel
                 {
                     Id = x.Id,
                     Name = x.Name,
                     Description = x.Description,
                     Price = x.Price,
-                    StockLevel = x.StockLevel,
-                    BrandId = x.BrandId,
+                    InStock = x.StockLevel > 0,
                     BrandName = x.Brand.Name,
-                    CategoryId = x.CategoryId,
                     CategoryName = x.Category.Name
                 })
                 .ToListAsync();

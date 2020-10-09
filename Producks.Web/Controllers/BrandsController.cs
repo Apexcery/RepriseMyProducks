@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Producks.Data;
+using Producks.Web.ViewModels;
 
 namespace Producks.Web.Controllers
 {
@@ -21,7 +22,13 @@ namespace Producks.Web.Controllers
         // GET: Brands
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Brands.ToListAsync());
+            return View(await _context.Brands
+                .Where(x => x.Active)
+                .Select(x => new BrandsViewModel
+                {
+                    Id = x.Id,
+                    Name = x.Name
+                }).ToListAsync());
         }
 
         // GET: Brands/Details/5
@@ -34,12 +41,17 @@ namespace Producks.Web.Controllers
 
             var brand = await _context.Brands
                 .FirstOrDefaultAsync(m => m.Id == id);
+            
             if (brand == null)
             {
                 return NotFound();
             }
 
-            return View(brand);
+            return View(new BrandsViewModel
+            {
+                Id = brand.Id,
+                Name = brand.Name
+            });
         }
 
         // GET: Brands/Create
@@ -125,6 +137,7 @@ namespace Producks.Web.Controllers
 
             var brand = await _context.Brands
                 .FirstOrDefaultAsync(m => m.Id == id);
+            
             if (brand == null)
             {
                 return NotFound();
@@ -139,8 +152,12 @@ namespace Producks.Web.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var brand = await _context.Brands.FindAsync(id);
-            _context.Brands.Remove(brand);
+            //_context.Brands.Remove(brand);
+            //await _context.SaveChangesAsync();
+
+            brand.Active = false;
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 

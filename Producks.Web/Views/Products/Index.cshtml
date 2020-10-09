@@ -1,4 +1,4 @@
-@model IEnumerable<Producks.Data.Product>
+@model IEnumerable<Producks.Web.ViewModels.ProductViewModel>
 
 @{
     ViewData["Title"] = "Index";
@@ -22,16 +22,16 @@
                 @Html.DisplayNameFor(model => model.Price)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.StockLevel)
+                @Html.DisplayNameFor(model => model.InStock)
             </th>
-            <th>
+            @*<th>
                 @Html.DisplayNameFor(model => model.Active)
+            </th>*@
+            <th>
+                @Html.DisplayNameFor(model => model.CategoryName)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Category)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Brand)
+                @Html.DisplayNameFor(model => model.BrandName)
             </th>
             <th></th>
         </tr>
@@ -49,16 +49,23 @@
                 @Html.DisplayFor(modelItem => item.Price)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.StockLevel)
+                @if (item.InStock)
+                {
+                    <p style="color: limegreen">In Stock</p>
+                }
+                else
+                {
+                    <p style="color: red">Out of Stock</p>
+                }
             </td>
-            <td>
+            @*<td>
                 @Html.DisplayFor(modelItem => item.Active)
+            </td>*@
+            <td>
+                @Html.DisplayFor(modelItem => item.CategoryName)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.Category.Description)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Brand.Name)
+                @Html.DisplayFor(modelItem => item.BrandName)
             </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |

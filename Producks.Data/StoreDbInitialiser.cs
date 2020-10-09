@@ -10,6 +10,21 @@ namespace Producks.Data
         public static async Task SeedTestData(StoreDb context,
                                               IServiceProvider services)
         {
+            foreach (var entity in context.Products)
+            {
+                context.Products.Remove(entity);
+            }
+            foreach (var entity in context.Categories)
+            {
+                context.Categories.Remove(entity);
+            }
+            foreach (var entity in context.Brands)
+            {
+                context.Brands.Remove(entity);
+            }
+
+            await context.SaveChangesAsync();
+
             if (context.Products.Any())
             {
                 //db seems to be seeded

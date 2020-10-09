@@ -1,4 +1,4 @@
-@model Producks.Data.Product
+@model Producks.Web.ViewModels.ProductViewModel
 
 @{
     ViewData["Title"] = "Details";
@@ -29,28 +29,35 @@
             @Html.DisplayFor(model => model.Price)
         </dd>
         <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.StockLevel)
+            @Html.DisplayNameFor(model => model.InStock)
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.StockLevel)
+            @if (Model.InStock)
+            {
+                <p style="color: limegreen; display: inline">In Stock</p>
+            }
+            else
+            {
+                <p style="color: red; display: inline">Out of Stock</p>
+            }
         </dd>
-        <dt class = "col-sm-2">
+        @*<dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.Active)
         </dt>
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.Active)
-        </dd>
+        </dd>*@
         <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Category)
+            @Html.DisplayNameFor(model => model.CategoryName)
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Category.Description)
+            @Html.DisplayFor(model => model.CategoryName)
         </dd>
         <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Brand)
+            @Html.DisplayNameFor(model => model.BrandName)
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Brand.Name)
+            @Html.DisplayFor(model => model.BrandName)
         </dd>
     </dl>
 </div>
