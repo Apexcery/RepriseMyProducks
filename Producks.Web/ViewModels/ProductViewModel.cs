@@ -18,5 +18,6 @@ namespace Producks.Web.ViewModels
         public string CategoryName { get; set; }
         [DisplayName("Brand")]
         public string BrandName { get; set; }
+        public bool Undercutters { get; set; }
     }
 }
