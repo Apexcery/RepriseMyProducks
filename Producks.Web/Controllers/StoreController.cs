@@ -105,7 +105,7 @@ namespace Producks.Web.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ViewProducts([Bind("BrandId, CategoryId")] StoreDto filter)
         {
-            if (_context.Products.All(x => x.BrandId != filter.BrandId || x.CategoryId != filter.CategoryId))
+            if (!_context.Products.Any(x => x.BrandId == filter.BrandId && x.CategoryId == filter.CategoryId))
             {
                 var undercuttersProducts = UndercuttersProducts
                     .Where(x => x.BrandId == filter.BrandId && x.CategoryId == filter.CategoryId)
