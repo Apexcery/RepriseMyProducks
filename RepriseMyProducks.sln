@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Producks.Data", "Producks.D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Producks.Web", "Producks.Web\Producks.Web.csproj", "{303533C7-5BBD-4B20-A509-9AB1C2FDF57E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Producks.Undercutters", "Producks.Undercutters\Producks.Undercutters.csproj", "{CCDC969D-5370-460B-B820-2984BDFB1057}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,5 +21,9 @@ Global
 		{303533C7-5BBD-4B20-A509-9AB1C2FDF57E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{303533C7-5BBD-4B20-A509-9AB1C2FDF57E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{303533C7-5BBD-4B20-A509-9AB1C2FDF57E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCDC969D-5370-460B-B820-2984BDFB1057}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCDC969D-5370-460B-B820-2984BDFB1057}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCDC969D-5370-460B-B820-2984BDFB1057}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCDC969D-5370-460B-B820-2984BDFB1057}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

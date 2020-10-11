@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Producks.Data;
+using Producks.Undercutters;
 using Producks.Web.Models;
 using Producks.Web.ViewModels;
 
@@ -17,70 +18,26 @@ namespace Producks.Web.Controllers
     public class StoreController : Controller
     {
         private readonly StoreDb _context;
-        private readonly HttpClient _client = new HttpClient();
-        private const string UndercuttersBaseUrl = "http://undercutters.azurewebsites.net/api";
-        private List<Models.Undercutters.Category> UndercuttersCategories;
-        private List<Models.Undercutters.Product> UndercuttersProducts;
-        private List<Models.Undercutters.Brand> UndercuttersBrands;
+        private List<Producks.Undercutters.Models.Category> UndercuttersCategories;
+        private List<Producks.Undercutters.Models.Brand> UndercuttersBrands;
+        private List<Producks.Undercutters.Models.Product> UndercuttersProducts;
 
         public StoreController(StoreDb context)
         {
             _context = context;
 
-            LoadUndercuttersCategories();
-            LoadUndercuttersProducts();
-            LoadUndercuttersBrands();
+            UndercuttersCategories = UndercuttersAPI.GetCategories().Result;
+            UndercuttersBrands = UndercuttersAPI.GetBrands().Result;
+            UndercuttersProducts = UndercuttersAPI.GetProducts().Result;
         }
-
-        #region LoadUndercuttersData
-
-            public void LoadUndercuttersCategories()
-            {
-                var response = _client.GetAsync($"{UndercuttersBaseUrl}/category").Result;
-                if (!response.IsSuccessStatusCode)
-                    return;
-                
-                UndercuttersCategories = JsonConvert.DeserializeObject<List<Models.Undercutters.Category>>(response.Content.ReadAsStringAsync().Result);
-            }
-            public void LoadUndercuttersProducts()
-            {
-                var response = _client.GetAsync($"{UndercuttersBaseUrl}/product").Result;
-                if (!response.IsSuccessStatusCode)
-                    return;
-                
-                UndercuttersProducts = JsonConvert.DeserializeObject<List<Models.Undercutters.Product>>(response.Content.ReadAsStringAsync().Result);
-            }
-            public void LoadUndercuttersBrands()
-            {
-                var response = _client.GetAsync($"{UndercuttersBaseUrl}/brand").Result;
-                if (!response.IsSuccessStatusCode)
-                    return;
-                
-                UndercuttersBrands = JsonConvert.DeserializeObject<List<Models.Undercutters.Brand>>(response.Content.ReadAsStringAsync().Result);
-            }
-
-        #endregion
 
         public async Task<IActionResult> Index()
         {
-            var brands = await _context.Brands
-                .Where(x => x.Active)
-                .Select(x => new BrandsViewModel
-                {
-                    Id = x.Id,
-                    Name = x.Name
-                })
-                .Union(UndercuttersBrands.Select(x => new BrandsViewModel
-                {
-                    Id = x.Id,
-                    Name = $"{x.Name} (Undercutters)"
-                }))
-                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
-                .ToListAsync();
-
-            ViewBag.Brands = brands;
-
-            var categories = await _context.Categories
+            var categories = new List<SelectListItem>
+            {
+                new SelectListItem("Any", "-1")
+            };
+            categories.AddRange(await _context.Categories
                 .Where(x => x.Active)
                 .Select(x => new CategoryViewModel
                 {
@@ -95,9 +52,28 @@ namespace Producks.Web.Controllers
                     Description = x.Description
                 }))
                 .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
-                .ToListAsync();
-
+                .ToListAsync());
             ViewBag.Categories = categories;
+
+            var brands = new List<SelectListItem>
+            {
+                new SelectListItem("Any", "-1")
+            };
+            brands.AddRange(await _context.Brands
+                .Where(x => x.Active)
+                .Select(x => new BrandsViewModel
+                {
+                    Id = x.Id,
+                    Name = x.Name
+                })
+                .Union(UndercuttersBrands.Select(x => new BrandsViewModel
+                {
+                    Id = x.Id,
+                    Name = $"{x.Name} (Undercutters)"
+                }))
+                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+                .ToListAsync());
+            ViewBag.Brands = brands;
 
             return View(new StoreDto());
         }
@@ -105,49 +81,142 @@ namespace Producks.Web.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ViewProducts([Bind("BrandId, CategoryId")] StoreDto filter)
         {
-            if (!_context.Products.Any(x => x.BrandId == filter.BrandId && x.CategoryId == filter.CategoryId))
+            var allProducksProducts = await _context.Products
+                .Where(x => x.Active)
+                .Include(x => x.Brand)
+                .Include(x => x.Category)
+                .ToListAsync();
+            
+            if (filter.CategoryId == -1 && filter.BrandId == -1)
             {
-                var undercuttersProducts = UndercuttersProducts
-                    .Where(x => x.BrandId == filter.BrandId && x.CategoryId == filter.CategoryId)
+                var allProducts = allProducksProducts
                     .Select(x => new ProductViewModel
                     {
                         Id = x.Id,
                         Name = x.Name,
                         Description = x.Description,
                         Price = x.Price,
+                        InStock = x.StockLevel > 0,
+                        BrandName = x.Brand.Name,
+                        CategoryName = x.Category.Name,
+                        Undercutters = false
+                    })
+                    .Concat(UndercuttersProducts.Select(x => new ProductViewModel
+                    {
+                        Id = x.Id,
+                        Name = x.Description,
+                        Description = x.Description,
+                        Price = x.Price,
                         InStock = x.InStock,
                         BrandName = x.BrandName,
                         CategoryName = x.CategoryName,
                         Undercutters = true
-                    }).ToList();
-
-                if (!undercuttersProducts.Any())
-                    return NotFound();
+                    }));
                 
-                return View("Products", undercuttersProducts);
+                return View("Products", allProducts);
             }
-            
-            var products = await _context.Products
-                .Where(
-                    x => x.Active &&
-                    x.BrandId == filter.BrandId &&
-                    x.CategoryId == filter.CategoryId)
-                .Include(x => x.Brand)
-                .Include(x => x.Category)
-                .Select(x => new ProductViewModel
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Description = x.Description,
-                    Price = x.Price,
-                    InStock = x.StockLevel > 0,
-                    BrandName = x.Brand.Name,
-                    CategoryName = x.Category.Name,
-                    Undercutters = false
-                })
-                .ToListAsync();
 
-            return View("Products", products);
+            if (filter.CategoryId != -1)
+            {
+                var allProducts = allProducksProducts
+                    .Where(x => x.CategoryId == filter.CategoryId)
+                    .Select(x =>
+                    {
+                        if (filter.BrandId != -1 && x.BrandId != filter.BrandId)
+                        {
+                            return null;
+                        }
+                        var product = new ProductViewModel
+                        {
+                            Id = x.Id,
+                            Name = x.Name,
+                            Description = x.Description,
+                            Price = x.Price,
+                            InStock = x.StockLevel > 0,
+                            BrandName = x.Brand.Name,
+                            CategoryName = x.Category.Name,
+                            Undercutters = false
+                        };
+                        return product;
+                    })
+                    .Concat(UndercuttersProducts
+                        .Where(x => x.CategoryId == filter.CategoryId)
+                        .Select(x =>
+                        {
+                            if (filter.BrandId != -1 && x.BrandId != filter.BrandId)
+                            {
+                                return null;
+                            }
+                            var product = new ProductViewModel
+                            {
+                                Id = x.Id,
+                                Name = x.Description,
+                                Description = x.Description,
+                                Price = x.Price,
+                                InStock = x.InStock,
+                                BrandName = x.BrandName,
+                                CategoryName = x.CategoryName,
+                                Undercutters = true
+                            };
+                            return product;
+                        }))
+                    .Where(x => x != null)
+                    .ToList();
+
+                return View("Products", allProducts);
+            }
+
+            if (filter.BrandId != -1)
+            {
+                var allProducts = allProducksProducts
+                    .Where(x => x.BrandId == filter.BrandId)
+                    .Select(x =>
+                    {
+                        if (filter.CategoryId != -1 && x.CategoryId != filter.CategoryId)
+                        {
+                            return null;
+                        }
+                        var product = new ProductViewModel
+                        {
+                            Id = x.Id,
+                            Name = x.Name,
+                            Description = x.Description,
+                            Price = x.Price,
+                            InStock = x.StockLevel > 0,
+                            BrandName = x.Brand.Name,
+                            CategoryName = x.Category.Name,
+                            Undercutters = false
+                        };
+                        return product;
+                    })
+                    .Concat(UndercuttersProducts
+                        .Where(x => x.BrandId == filter.BrandId)
+                        .Select(x =>
+                        {
+                            if (filter.CategoryId != -1 && x.CategoryId != filter.CategoryId)
+                            {
+                                return null;
+                            }
+                            var product = new ProductViewModel
+                            {
+                                Id = x.Id,
+                                Name = x.Description,
+                                Description = x.Description,
+                                Price = x.Price,
+                                InStock = x.InStock,
+                                BrandName = x.BrandName,
+                                CategoryName = x.CategoryName,
+                                Undercutters = true
+                            };
+                            return product;
+                        }))
+                    .Where(x => x != null)
+                    .ToList();
+
+                return View("Products", allProducts);
+            }
+
+            return NotFound();
         }
     }
 }

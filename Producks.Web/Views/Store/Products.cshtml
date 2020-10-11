@@ -27,6 +27,9 @@
         <th>
             @Html.DisplayNameFor(model => model.BrandName)
         </th>
+        <th>
+            @Html.DisplayName("Store")
+        </th>
     </tr>
     </thead>
     <tbody>
@@ -57,6 +60,16 @@
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.BrandName)
+            </td>
+            <td>
+                @if (item.Undercutters)
+                {
+                    <p>Undercutters</p>
+                }
+                else
+                {
+                    <p>Producks</p>
+                }
             </td>
         </tr>
     }

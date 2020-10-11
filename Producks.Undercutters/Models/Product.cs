@@ -1,4 +1,4 @@
-﻿namespace Producks.Web.Models.Undercutters
+﻿namespace Producks.Undercutters.Models
 {
     public class Product
     {
